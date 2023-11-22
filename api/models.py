@@ -12,7 +12,7 @@ class Users(models.Model):
     login = models.CharField(max_length=50)
     password = models.CharField(max_length=50)
     ip = models.GenericIPAddressField()
-    lastLogin = models.DateField()
+    last_login = models.DateField()
     role = models.IntegerField()
     services_offered = models.JSONField()
 
@@ -48,12 +48,15 @@ class Customers(models.Model):
     company_id = models.ForeignKey("Company", on_delete=models.CASCADE, null = True)
 
 class Order(models.Model):
+    bar_code = models.CharField(max_length=50, null=True)
+    cost = models.IntegerField(null=True)
     creation_date = models.DateTimeField(auto_now=True)
     service = models.ForeignKey("Service", on_delete=models.CASCADE)
     order_status = models.CharField(max_length=30, default="")
     service_status = models.CharField(max_length=30)
-    order_completion_time = models.IntegerField()
+    order_completion_time = models.IntegerField(null=True)
     user = models.ForeignKey("Users", on_delete=models.CASCADE)
+    customer = models.ForeignKey("Customers", on_delete=models.CASCADE, null=True)
 
 class LoginHistory(models.Model):
     user_login = models.CharField(max_length=50)

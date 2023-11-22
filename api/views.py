@@ -110,15 +110,18 @@ def user_login(request):
         password = request.POST.get('password')
         user = Users.objects.filter(login=username, password=password)
         ip_address = request.META.get('REMOTE_ADDR')
-        LoginHistory.objects.create(user_login=username, user_name=username, ip_address=ip_address, successful=user.exists())
         if user.exists():
+            user_data = user.values()[0]
+            name_full_name = f'{user_data['first_name']} {user_data['last_name']}'
+            LoginHistory.objects.create(user_login=username, user_name=name_full_name, ip_address=ip_address, successful=True)
             user.update(lastLogin = datetime.now().strftime('%Y-%m-%d'))
             res = {
                 'status': 'success',
-                'data': list(user.values()),
+                'data': user_data,
             }
             return JsonResponse(res, status = 200)
         else:
+            LoginHistory.objects.create(user_login=username, user_name='', ip_address=ip_address, successful=False)
             res = {
                 'status': 'error',
                 'message': 'Invalid username or password. Please try again.',
@@ -142,7 +145,7 @@ def login_history(request):
         if ordering == 'descending':
             order_by = '-login_time'
         if search:
-            data = LoginHistory.objects.filter(user_name__startswith=search).order_by(order_by)
+            data = LoginHistory.objects.filter(Q(user_name__istartswith=search) | Q(user_login__istartswith=search)).order_by(order_by)
         else:
             data = LoginHistory.objects.all().order_by(order_by)
         res = {
@@ -164,17 +167,21 @@ def login_history(request):
 def create_order(request):
     try:
         if request.method == 'POST':
+            bar_code = request.POST.get('bar_code')
             service_id = request.POST.get('service_id')
-            order_completion_time = request.POST.get('order_completion_time')
             user_id = request.POST.get('user_id')
+            customer_id = request.POST.get('customer_id')
+            cost = request.POST.get('cost')
             order = Order.objects.create(
-                service_id=service_id,
-                order_status=order_status,
-                service_status=service_status,
-                order_completion_time=order_completion_time,
-                user_id=user_id
+                bar_code=bar_code,
+                service=service_id,
+                order_status="Order Received",
+                service_status="",
+                user=user_id,
+                customer=customer_id,
+                cost=int(cost)
             )
-            return JsonResponse({'status': 'success', 'message': 'Order created successfully'}, 200)
+            return JsonResponse({'status': 'success', 'message': 'Order created successfully'}, status=201)
     except Exception as e:
         res = {
             'status': 'error',
@@ -239,7 +246,6 @@ def create_customer(request):
 
 def create_company(request):
     try:
-        # Retrieve data from the POST request
         data = request.POST
         new_company = Company(
             name=data.get('name'),
@@ -251,6 +257,45 @@ def create_company(request):
         new_company.save()
         return JsonResponse({'message': 'Company created successfully'}, status = 201)
 
+    except Exception as e:
+        res = {
+            'status': 'error',
+            'message': 'Internal Server Error',
+            'error_type': 'DatabaseException'
+        }
+        return JsonResponse(res, status = 500)
+
+def get_services(request):
+    try:
+        services = Service.objects.all()
+        res = {
+            "status": "success",
+            "data": list(services.values())
+        }
+        return JsonResponse(res, status = 200)
+    except Exception as e:
+        res = {
+            'status': 'error',
+            'message': 'Internal Server Error',
+            'error_type': 'DatabaseException'
+        }
+        return JsonResponse(res, status = 500)
+
+def get_customers_by_name(request):
+    search = request.GET.get('search')
+    try:
+        data = []
+        customers = Customers.objects.filter(first_name__istartswith=search).values_list('first_name', 'last_name', 'id')
+        for customer in customers:
+            data.append({
+                "name": f'{customer[0]} {customer[1]}',
+                'id': customer[2]
+            })
+        res = {
+            "status": "success",
+            "data": data
+        }
+        return JsonResponse(res, status = 200)
     except Exception as e:
         res = {
             'status': 'error',
