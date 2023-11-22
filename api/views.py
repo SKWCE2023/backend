@@ -44,7 +44,7 @@ def import_users_data():
                     login = row[2],
                     password = row[3],
                     ip = row[4],
-                    lastLogin = datetime.strptime(row[5], '%m/%d/%Y').strftime('%Y-%m-%d'),
+                    last_login = datetime.strptime(row[5], '%m/%d/%Y').strftime('%Y-%m-%d'),
                     services_offered = row[6],
                     role = row[7],
                 )
@@ -114,7 +114,7 @@ def user_login(request):
             user_data = user.values()[0]
             name_full_name = f'{user_data['first_name']} {user_data['last_name']}'
             LoginHistory.objects.create(user_login=username, user_name=name_full_name, ip_address=ip_address, successful=True)
-            user.update(lastLogin = datetime.now().strftime('%Y-%m-%d'))
+            user.update(last_login = datetime.now().strftime('%Y-%m-%d'))
             res = {
                 'status': 'success',
                 'data': user_data,
