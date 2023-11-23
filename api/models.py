@@ -17,11 +17,11 @@ class Users(models.Model):
     services_offered = models.JSONField()
 
 class Company(models.Model):
-    name = models.CharField(max_length=250)
+    name = models.CharField(max_length=254)
     address = models.TextField()
     tin = models.IntegerField()
-    rs = models.CharField(max_length=20)
-    bic = models.CharField(max_length=20)
+    rs = models.CharField(max_length=50)
+    bic = models.CharField(max_length=50)
 
 class Customers(models.Model):
     first_name = models.CharField(max_length=50)
@@ -32,8 +32,8 @@ class Customers(models.Model):
     email = models.EmailField(max_length=254)
     ip = models.GenericIPAddressField(null = True)
     social_sec_number = models.CharField(max_length=30, null = True)
-    ein = models.CharField(max_length=20, null = True)
-    social_type = models.CharField(max_length=10, null = True)
+    ein = models.CharField(max_length=50, null = True)
+    social_type = models.CharField(max_length=50, null = True)
     country = models.CharField(max_length=50, null = True)
     phone = PhoneNumberField()
     passport_series = models.IntegerField()
@@ -45,11 +45,11 @@ class Customers(models.Model):
     insurance_policy = models.CharField(max_length=50, null = True)
     insurance_bik = models.CharField(max_length=50, null = True)
     user_agent = models.TextField(null = True)
-    company_id = models.ForeignKey("Company", on_delete=models.CASCADE, null = True)
+    company_name = models.CharField(max_length=254, null = True)
 
 class Order(models.Model):
     bar_code = models.CharField(max_length=50, null=True)
-    cost = models.IntegerField(null=True)
+    cost = models.FloatField(null=True)
     creation_date = models.DateTimeField(auto_now=True)
     service = models.ForeignKey("Service", on_delete=models.CASCADE)
     order_status = models.CharField(max_length=30, default="")
@@ -66,7 +66,7 @@ class LoginHistory(models.Model):
     successful = models.BooleanField()
 
 class ServiceRendered(models.Model):
-    service_name = models.CharField(max_length=100)
+    service = models.ForeignKey('Service', on_delete=models.CASCADE)
     platform = models.CharField(max_length=100)
     performed_by = models.ForeignKey('Users', on_delete=models.CASCADE)
     performed_at = models.DateTimeField(auto_now=True)
@@ -76,6 +76,5 @@ class ServiceRendered(models.Model):
 class UtilizerOperation(models.Model):
     order = models.ForeignKey('Order', on_delete=models.CASCADE)
     order_received_at = models.DateTimeField(auto_now_add=True)
-    execution_time_seconds = models.IntegerField(default=0)
     service_rendered = models.ForeignKey(Service, on_delete=models.CASCADE)
     execution_completed_at = models.DateTimeField(null=True, blank=True)

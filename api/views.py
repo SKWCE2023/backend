@@ -89,9 +89,17 @@ def import_customers_data():
         print(f'Error importing customers data: {e}')
 
 def user_logout(request):
-    time = datetime.now() + timedelta(minutes=15)
-    request.session['login_blocked_until'] = time.strftime('%m/%d/%Y, %H:%M:%S')
-    return JsonResponse({'status': 'success'}, status = 200)
+    try:
+        time = datetime.now() + timedelta(minutes=15)
+        request.session['login_blocked_until'] = time.strftime('%m/%d/%Y, %H:%M:%S')
+        return JsonResponse({'status': 'success'}, status = 200)
+    except Exception as e:
+        res = {
+            'status': 'error',
+            'message': 'Internal Server Error',
+            'error_type': 'DatabaseException'
+        }
+        return JsonResponse(res, status = 500)
 
 @csrf_exempt 
 def user_login(request):
@@ -104,7 +112,7 @@ def user_login(request):
                 'message': 'Login is blocked for 15 minutes. Please try again later.',
                 'error_type': 'LoginBlockedException'
             }
-            return JsonResponse(res, status = 503)
+            return JsonResponse(res, status = 403)
 
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -112,8 +120,8 @@ def user_login(request):
         ip_address = request.META.get('REMOTE_ADDR')
         if user.exists():
             user_data = user.values()[0]
-            name_full_name = f'{user_data['first_name']} {user_data['last_name']}'
-            LoginHistory.objects.create(user_login=username, user_name=name_full_name, ip_address=ip_address, successful=True)
+            full_name = f"{user_data['first_name']} {user_data['last_name']}"
+            LoginHistory.objects.create(user_login=username, user_name=full_name, ip_address=ip_address, successful=True)
             user.update(last_login = datetime.now().strftime('%Y-%m-%d'))
             res = {
                 'status': 'success',
@@ -174,15 +182,16 @@ def create_order(request):
             cost = request.POST.get('cost')
             order = Order.objects.create(
                 bar_code=bar_code,
-                service=service_id,
-                order_status="Order Received",
-                service_status="",
-                user=user_id,
-                customer=customer_id,
-                cost=int(cost)
+                service=Service.objects.get(id=int(service_id)),
+                order_status="Received",
+                service_status="Pending for Recycle",
+                user=Users.objects.get(id=int(user_id)),
+                customer=Customers.objects.get(id=int(customer_id)),
+                cost=float(cost)
             )
             return JsonResponse({'status': 'success', 'message': 'Order created successfully'}, status=201)
     except Exception as e:
+        print(e)
         res = {
             'status': 'error',
             'message': 'Internal Server Error',
@@ -198,14 +207,21 @@ def get_last_order_id(request):
             'status': 'success',
             'data': last_order.id,
         }
-        return JsonResponse(res, 200)
+        return JsonResponse(res, status=200)
     except Order.DoesNotExist:
         res = {
             'status': 'error',
             'message': 'No orders found',
             'error_type': 'DoesNotExistException'
         }
-        return JsonResponse(res, 404)
+        return JsonResponse(res, status=404)
+    except Exception as e:
+        res = {
+            'status': 'error',
+            'message': 'Internal Server Error',
+            'error_type': 'DatabaseException'
+        }
+        return JsonResponse(res, status = 500)
 
 @csrf_exempt
 def create_customer(request):
@@ -233,7 +249,8 @@ def create_customer(request):
                 insurance_inn = data.get('insurance_inn', None),
                 insurance_policy = data.get('insurance_policy', None),
                 insurance_bik = data.get('insurance_bik', None),
-                user_agent = data.get('user_agent', None)
+                user_agent = data.get('user_agent', None),
+                company_name = data.get('company_name', None)
                 )
             return JsonResponse({'message': 'Customer created successfully'}, status = 201)
     except Exception as e:
