@@ -88,6 +88,46 @@ def import_customers_data():
     except Exception as e:
         print(f'Error importing customers data: {e}')
 
+def create_temp_administrators():
+    try:
+        administrators = [
+            {
+                'first_name': 'Shubham',
+                'last_name': 'Expert',
+                'login': 'expertSK',
+                'password': 'root',
+                'ip': '127.0.0.1',
+                'last_login': '2023-11-24',
+                'type': '4',
+                'services_offered': []
+            },
+            {
+                'first_name': 'Kirti',
+                'last_name': 'Competitor',
+                'login': 'competitorK',
+                'password': 'root',
+                'ip': '127.0.0.1',
+                'last_login': '2022-11-24',
+                'type': '4',
+                'services_offered': []
+            }
+        ]
+        for row in administrators:
+            user = Users.objects.create(
+                first_name = row['first_name'],
+                last_name = row['last_name'],
+                login = row['login'],
+                password = row['password'],
+                ip = row['ip'],
+                last_login = row['last_login'],
+                role = row['type'],
+                services_offered = row['services_offered'],
+            )
+            user.save()
+        print('Administrator added successfully')
+    except Exception as e:
+        print(f'Error adding administrator: {e}')
+
 def user_logout(request):
     try:
         time = datetime.now() + timedelta(minutes=15)
